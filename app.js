@@ -555,7 +555,7 @@ function histEx(){
     const best=h[0]?doneSets(h[0].x).reduce((b,t)=>(e1rm(t)||Number(t.r)||0)>(e1rm(b)||Number(b.r)||0)?t:b):null;
     return `<li><button class="row" data-act="exHist" data-v="${esc(n)}"><span class="row-main"><b>${esc(n)}</b><small>${h.length?`${h.length}× · zuletzt ${ago(h[0].s.date)} · bester Satz ${esc(setStr(best,u))}`:'noch keine Werte'}</small></span>${spark(h.slice(0,12).reverse().map(e=>score(e.x,u)))}${I.chev}</button></li>`}).join('')}</ul>`;
 }
-const score=(x,u)=>doneSets(x).reduce((m,t)=>Math.max(m,u==='wdh'&&e1rm(t)?e1rm(t):Number(t.r)||0),0);
+const score=(x,u)=>doneSets(x).reduce((m,t)=>Math.max(m,u==='wdh'&&has(t.w)&&Number(t.w)?Number(t.w):Number(t.r)||0),0);
 function spark(vals){
   if(vals.length<2)return '';const w=64,h=22;const mn=Math.min(...vals),mx=Math.max(...vals);const sc=mx-mn||1;
   const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-2-(v-mn)/sc*(h-4)).toFixed(1)}`).join(' ');
@@ -584,7 +584,7 @@ function openExHist(name){
   openSheet('exh',`<div class="sh-head"><span></span><h2>${esc(name)}</h2><button class="txt-btn" data-act="close">Fertig</button></div>
   <div class="sh-body">
     ${p&&p.hint?`<div class="hintbox"><p><b>Ausführung</b>${esc(p.hint)}</p></div>`:''}
-    <div class="card" style="margin-top:0">${lineChart(pts,{unit:u==='wdh'&&pts.some(x=>x.v)&&h.some(e=>doneSets(e.x).some(t=>Number(t.w)))?'Geschätztes 1RM in kg (bester Satz)':`Bester Satz in ${unitLbl(u)}`})}</div>
+    <div class="card" style="margin-top:0">${lineChart(pts,{unit:u==='wdh'&&pts.some(x=>x.v)&&h.some(e=>doneSets(e.x).some(t=>Number(t.w)))?'Schwerstes Gewicht pro Training in kg':`Bester Satz in ${unitLbl(u)}`})}</div>
     <ul class="rows">${h.map(e=>`<li><button class="row" data-act="openSes" data-id="${esc(e.s.id)}"><span class="row-main"><b>${esc(relDate(e.s.date))}${e.x.alt?` · ${esc(e.x.alt)}`:''}</b>
       <small class="wrap">${e.x.st==='skip'?`<span class="skipc">Übersprungen</span>${e.x.note?` · ${esc(e.x.note)}`:''}`:`${doneSets(e.x).map(t=>esc(setStr(t,u))+(has(t.rir)?` @${esc(fmtN(t.rir))}`:'')).join(' · ')}${e.x.note?`<br>„${esc(e.x.note)}“`:''}`}</small></span>${I.chev}</button></li>`).join('')||'<li><div class="row"><span class="row-main"><small>Noch keine Einträge</small></span></div></li>'}</ul>
   </div>`);
@@ -711,11 +711,11 @@ darkMQ.addEventListener?.('change',()=>{if(!themeSaved()){applyTheme();if(S.view
 let sheetKind=null;
 function openSheet(kind,html){
   sheetKind=kind;const sh=$('#sheet'),sc=$('#scrim');
-  sh.innerHTML=html;sh.hidden=false;sc.hidden=false;
+  sh.innerHTML=html;sh.hidden=false;sc.hidden=false;document.body.classList.add('sheet-open');
   requestAnimationFrame(()=>{sh.classList.add('open');sc.classList.add('open')});
 }
 function closeSheet(){
-  const sh=$('#sheet'),sc=$('#scrim');sh.classList.remove('open');sc.classList.remove('open');sheetKind=null;BW=null;
+  const sh=$('#sheet'),sc=$('#scrim');sh.classList.remove('open');sc.classList.remove('open');sheetKind=null;BW=null;document.body.classList.remove('sheet-open');
   setTimeout(()=>{if(!sheetKind){sh.hidden=true;sc.hidden=true;sh.innerHTML=''}},280);
 }
 let toastT;
