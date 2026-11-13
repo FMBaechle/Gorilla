@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>
-<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB547"/><stop offset="1" stop-color="#F0652F"/></linearGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8C96F7"/><stop offset="1" stop-color="#4249C4"/></linearGradient>
 <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A5F6E"/><stop offset="1" stop-color="#363A46"/></linearGradient>
 <linearGradient id="arm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#626878"/><stop offset="1" stop-color="#3E424F"/></linearGradient>
 </defs>
 <rect width="512" height="512" fill="url(#bg)"/>
 <g>
-<ellipse cx="256" cy="452" rx="150" ry="22" fill="#C9481C" opacity=".45"/>
+<ellipse cx="256" cy="452" rx="150" ry="22" fill="#2B2F8F" opacity=".45"/>
 <path d="M110 400C104 320 136 270 200 256H312C376 270 408 320 402 400C398 446 340 458 256 458C172 458 114 446 110 400Z" fill="url(#fur)"/>
 <path d="M200 300C222 286 290 286 312 300C330 336 322 400 256 410C190 400 182 336 200 300Z" fill="#7C8293"/>
 <path d="M228 318C240 328 254 330 254 330M284 318C272 328 258 330 258 330" fill="none" stroke="#5A5F6E" stroke-width="6" stroke-linecap="round"/>

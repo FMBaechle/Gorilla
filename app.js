@@ -364,10 +364,10 @@ function renderSes(v){
   const head=`<header class="top ses-top">
     <div class="top-row"><button class="txt-btn back" data-act="closeSes">${I.left}Fertig</button><span data-slot="status">${statusPill()}</span>
       <label class="chip date">${I.cal}<span>${relDate(s.date)}</span><input type="date" id="sesDate" value="${esc(s.date)}" max="${TODAY_ISO}" aria-label="Datum der Einheit"></label></div>
-    <div class="ses-h"><h1>${esc(s.day)}</h1><div class="ses-meta"><span class="pill ${wi.deload?'dl':''}">${wi.deload?'Deload-Woche':`Woche ${wi.pos}/${wi.cyc}`}</span>${s.st==='skip'?'':`<span id="sesProg">${c.d+c.k}/${total} Übungen</span>`}</div></div>
-    ${s.st==='skip'?'':`<div class="prog"><i id="sesBar" style="width:${total?(c.d+c.k)/total*100:0}%"></i></div>
-    <div class="seg loc" role="group" aria-label="Ort"><button data-act="loc" data-v="" class="${home?'':'on'}" aria-pressed="${!home}">${I.dumbbell} Gym</button><button data-act="loc" data-v="home" class="${home?'on':''}" aria-pressed="${home}">${I.home} Zuhause</button></div>`}
+    ${s.st==='skip'?'':`<div class="prog"><i id="sesBar" style="width:${total?(c.d+c.k)/total*100:0}%"></i></div>`}
   </header>
+    <div class="ses-h"><h1>${esc(s.day)}</h1><div class="ses-meta"><span class="pill ${wi.deload?'dl':''}">${wi.deload?'Deload-Woche':`Woche ${wi.pos}/${wi.cyc}`}</span>${s.st==='skip'?'':`<span id="sesProg">${c.d+c.k}/${total} Übungen</span>`}</div></div>
+    ${s.st==='skip'?'':`<div class="seg loc" role="group" aria-label="Ort"><button data-act="loc" data-v="" class="${home?'':'on'}" aria-pressed="${!home}">${I.dumbbell} Gym</button><button data-act="loc" data-v="home" class="${home?'on':''}" aria-pressed="${home}">${I.home} Zuhause</button></div>`}
   ${s.date!==TODAY_ISO?`<p class="backfill-note">${I.cal}<span>Du trägst ein Training vom <b>${shortDate(s.date)}</b> ein.</span></p>`:''}`;
   if(s.st==='skip'){
     v.innerHTML=head+`<section class="card skipcard"><div class="skipbig">${I.skip}</div><h2>Training übersprungen</h2>
@@ -464,7 +464,8 @@ function exCard(x,i){
 function rerenderEx(i){const el=$('#ex'+i);if(el)el.outerHTML=exCard(CUR.ex[i],i);updProg()}
 function rerenderList(){const el=$('#exList');if(el)el.innerHTML=CUR.ex.map((x,i)=>exCard(x,i)).join('');updProg()}
 function updProg(){const c=exCount(CUR),t=CUR.ex.length;const a=$('#sesProg'),b=$('#sesBar');if(a)a.textContent=`${c.d+c.k}/${t} Übungen`;if(b)b.style.width=(t?(c.d+c.k)/t*100:0)+'%'}
-function expand(i){UI.exp=i;UI.altPick=null;rerenderList();const el=$('#ex'+i);if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),30)}
+function scrollToEl(el){if(!el)return;const h=($('.top')||{}).offsetHeight||0;const y=el.getBoundingClientRect().top+window.scrollY-h-8;window.scrollTo({top:Math.max(0,y),behavior:'smooth'})}
+function expand(i){UI.exp=i;UI.altPick=null;rerenderList();const el=$('#ex'+i);if(el)setTimeout(()=>scrollToEl(el),30)}
 
 /* Pausen-Timer */
 let TM=null,tmI=null;
@@ -472,12 +473,13 @@ function startTimer(sec){
   if(!sec)return;
   TM={end:Date.now()+sec*1000,total:sec};clearInterval(tmI);tmI=setInterval(tick,250);tick();
 }
-function stopTimer(){TM=null;clearInterval(tmI);const el=$('#timer');el.hidden=true;el.innerHTML=''}
+function stopTimer(){TM=null;clearInterval(tmI);const el=$('#timer');el.hidden=true;el.innerHTML='';document.body.classList.remove('has-timer')}
 function tick(){
-  const el=$('#timer');if(!TM){el.hidden=true;return}
+  const el=$('#timer');if(!TM){el.hidden=true;document.body.classList.remove('has-timer');return}
   const left=Math.max(0,Math.round((TM.end-Date.now())/1000));
-  el.hidden=false;
-  el.innerHTML=`<div class="timer-in" style="--p:${(1-left/TM.total)*100}%">${I.timer}<b class="num">${Math.floor(left/60)}:${pad(left%60)}</b><span>Pause</span><button data-act="tPlus">+30 s</button><button data-act="tStop" aria-label="Pause beenden">${I.x}</button></div>`;
+  if(el.hidden||!el.firstChild){el.innerHTML=`<div class="timer-in">${I.timer}<b class="num" id="tLeft"></b><span>Pause</span><button data-act="tPlus">+30 s</button><button data-act="tStop" aria-label="Pause beenden">${I.x}</button></div>`;el.hidden=false;document.body.classList.add('has-timer')}
+  const txt=`${Math.floor(left/60)}:${pad(left%60)}`;const t=$('#tLeft');if(t.textContent!==txt)t.textContent=txt;
+  el.firstChild.style.setProperty('--p',((1-left/TM.total)*100).toFixed(1)+'%');
   if(left<=0){stopTimer();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}beep();toast('Pause vorbei. Nächster Satz!')}
 }
 let AC=null;
@@ -701,7 +703,7 @@ function themeSaved(){try{const t=localStorage.getItem('gorilla-theme');return t
 const themeIsDark=()=>{const t=themeSaved();return t?t==='dark':darkMQ.matches};
 function applyTheme(){
   const t=themeSaved();if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');
-  const col=themeIsDark()?'#14110F':'#FBF8F4';document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.setAttribute('content',col);m.removeAttribute('media')});
+  const col=themeIsDark()?'#101119':'#F8F8FC';document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.setAttribute('content',col);m.removeAttribute('media')});
 }
 darkMQ.addEventListener?.('change',()=>{if(!themeSaved()){applyTheme();if(S.view==='set')refresh()}});
 
@@ -839,6 +841,8 @@ document.addEventListener('submit',async e=>{
 });
 
 document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=radio]):not([type=date]),textarea'))document.body.classList.add('kb')});
+document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!(a&&a.matches&&a.matches('input,textarea')))document.body.classList.remove('kb')},60));
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
 window.addEventListener('online',()=>{updateStatus();scheduleSync(300)});
 window.addEventListener('offline',updateStatus);
