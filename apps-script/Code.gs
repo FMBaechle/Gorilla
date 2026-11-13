@@ -52,7 +52,14 @@ var SAMPLE_PLAN = [
 /* ---------- Einrichtung ---------- */
 function setup() {
   var ss = SpreadsheetApp.getActive();
-  var migrated = isOldLog_(ss.getSheetByName('Log')) ? migrieren_(ss) : null;
+  var logSh = oldLogSheet_(ss);
+  if (logSh && logSh.getName() !== 'Log') logSh.setName('Log');
+  var migrated = null;
+  if (isOldLog_(logSh)) migrated = migrieren_(ss);
+  else if (logSh && logSh.getLastRow() > 1 && String(logSh.getRange(1, 4).getValue()).trim() !== 'Satz') {
+    throw new Error('Der Tab „Log“ enthält Daten in einem unbekannten Format. Es wurde nichts verändert. Bitte die erste Zeile und zwei Beispielzeilen an Claude schicken.');
+  }
+  if (!migrated) Logger.log(logSh ? 'Tab „Log“ ist schon im neuen Format, keine Übernahme nötig.' : 'Kein alter Tab „Log“ gefunden, starte leer.');
   Object.keys(DEF).forEach(function (k) { ensureSheet_(k); });
   var plan = ss.getSheetByName(DEF.plan.name);
   if (plan.getLastRow() < 2) writeRows_('plan', SAMPLE_PLAN);
@@ -311,9 +318,21 @@ function fillHome_() {
 
 /* ---------- Übernahme aus der alten Trainings-App ---------- */
 function isOldLog_(sh) {
-  if (!sh) return false;
-  var h = sh.getRange(1, 1, 1, 7).getValues()[0].map(function (v) { return String(v).trim(); });
-  return h[0] === 'Datum' && h[2] === 'Übung' && h[3] === 'Gewicht' && h[4] === 'Wdh';
+  if (!sh || sh.getLastRow() < 2) return false;
+  var w = Math.min(Math.max(sh.getLastColumn(), 1), 12);
+  var h = sh.getRange(1, 1, 1, w).getValues()[0].map(function (v) { return String(v).trim().toLowerCase(); });
+  // Neues Format erkennt man an „Satz“ in Spalte D bzw. „Einheit“ in Spalte K
+  if (h[3] === 'satz' || h[10] === 'einheit') return false;
+  // Altes Format: Datum | Tag | Übung | Gewicht | Wdh | RIR | Notiz (Überschriften dürfen leicht abweichen)
+  var rows = sh.getRange(2, 1, Math.min(sh.getLastRow() - 1, 50), Math.min(w, 7)).getValues();
+  var hits = rows.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(day_(r[0])) && String(r[2] || '').trim(); }).length;
+  return hits > 0;
+}
+
+function oldLogSheet_(ss) {
+  var sh = ss.getSheetByName('Log');
+  if (sh) return sh;
+  return ss.getSheets().filter(function (x) { return /^log$/i.test(x.getName().trim()); })[0] || null;
 }
 
 function migrieren_(ss) {
