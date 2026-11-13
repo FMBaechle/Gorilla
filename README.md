@@ -2,9 +2,11 @@
 
 Krafttraining in Sekunden protokollieren, auch ohne Netz im Studio. Die App läuft als Web-App (PWA) auf dem Handy-Homescreen. Datenbasis ist ein Google Sheet.
 
-- **Training:** Trainingstag antippen, pro Satz Gewicht, Wiederholungen und RIR eintragen. Die Werte vom letzten Mal stehen als Vorschlag im Feld, ein Tipp auf ✓ übernimmt sie. Danach läuft automatisch die Satzpause.
+- **Training:** Trainingstag antippen. Immer nur die aktuelle Übung ist aufgeklappt, erledigte klappen zu. Pro Satz Gewicht, Wiederholungen und RIR eintragen. Die Werte vom letzten Mal stehen als Vorschlag im Feld, ein Tipp auf ✓ übernimmt sie. Danach läuft automatisch die Satzpause.
 - **Hinweise:** Ausführungshinweis, Alternative und Video-Link aus dem Plan direkt an der Übung. Dazu ein Vorschlag nach doppelter Progression („Heute 62,5 kg versuchen“) und Deload-Hinweise.
-- **Überspringen:** Übung mit Grund überspringen (Gerät belegt, Schmerzen …). Die Werte der Vorwoche bleiben trotzdem sichtbar.
+- **Überspringen:** Einzelne Übungen oder ein ganzes Training mit Grund überspringen. Die Werte der Vorwoche bleiben trotzdem sichtbar, der nächste Trainingstag rückt nach.
+- **Zuhause:** Ein Schalter tauscht alle Übungen gegen die Zuhause-Variante aus dem Plan.
+- **Kalender:** Monatsansicht mit allen abgehakten Trainingstagen, Vergleich zum Vormonat, Wochen-Serie und Rekordmonat.
 - **Nachtragen:** Trainings für jedes vergangene Datum erfassen oder später bearbeiten.
 - **Verlauf:** Einheiten nach Woche und Deload-Zyklus, Fortschritt pro Übung als Kurve.
 - **Körpergewicht:** Einträge mit Datum, Kurve mit 7-Tage-Schnitt.
@@ -23,9 +25,9 @@ Krafttraining in Sekunden protokollieren, auch ohne Netz im Studio. Die App läu
 
 | Tab | Inhalt |
 | --- | --- |
-| **Plan** | `Tag · Übung · Sätze · Wdh · RIR · Richtgewicht · Alternative · Hinweis · Pause · Video`. Pflegst du im Sheet, die App liest ihn bei jedem Sync. `Pause` in Sekunden (leer = 90). Mehrere Alternativen mit `/` trennen. |
+| **Plan** | `Tag · Übung · Sätze · Wdh · RIR · Richtgewicht · Alternative · Hinweis · Pause · Video · Zuhause · Hinweis Zuhause`. Pflegst du im Sheet, die App liest ihn bei jedem Sync. `Pause` in Sekunden (leer = 90). Mehrere Alternativen mit `/` trennen. `Zuhause` ist die Variante ohne Geräte; `setup` schlägt für bekannte Übungen eine vor, eigene Einträge bleiben unverändert. |
 | **Log** | Eine Zeile pro Satz: `Datum · Tag · Übung · Satz · Gewicht · Wdh · RIR · Status · Variante · Notiz · Einheit · Pos`. Status ist `erledigt` oder `übersprungen`. |
-| **Einheiten** | Eine Zeile pro Training mit Notiz |
+| **Einheiten** | Eine Zeile pro Training mit Notiz, Status (`übersprungen`) und Ort (`Gym`/`Zuhause`) |
 | **Körpergewicht** | `Datum · Gewicht · Notiz · id` |
 | **Gorilla** | Zugangsschlüssel (B2), Zykluslänge (B3), Trainingsstart (B4) |
 

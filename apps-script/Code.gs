@@ -13,10 +13,10 @@
  *  4. In der App unter Einstellungen → Google Sheet: URL und Zugangsschlüssel eintragen.
  *
  * Tabs:
- *  Plan          Tag | Übung | Sätze | Wdh | RIR | Richtgewicht | Alternative | Hinweis | Pause | Video
+ *  Plan          Tag | Übung | Sätze | Wdh | RIR | Richtgewicht | Alternative | Hinweis | Pause | Video | Zuhause | Hinweis Zuhause
  *                (pflegst du hier im Sheet; die App liest ihn bei jedem Sync)
  *  Log           eine Zeile pro Satz: Datum | Tag | Übung | Satz | Gewicht | Wdh | RIR | Status | Variante | Notiz | Einheit | Pos
- *  Einheiten     eine Zeile pro Training: id | Datum | Tag | Notiz | Geändert
+ *  Einheiten     eine Zeile pro Training: id | Datum | Tag | Notiz | Geändert | Status (übersprungen) | Ort (Gym/Zuhause)
  *  Körpergewicht Datum | Gewicht | Notiz | id
  *  Gorilla       Zugangsschlüssel, Zykluslänge (Deload), Trainingsstart
  *
@@ -25,11 +25,11 @@
  */
 
 var DEF = {
-  plan: { name: 'Plan', cols: ['Tag', 'Übung', 'Sätze', 'Wdh', 'RIR', 'Richtgewicht', 'Alternative', 'Hinweis', 'Pause', 'Video'],
-          text: ['Tag', 'Übung', 'Sätze', 'Wdh', 'RIR', 'Richtgewicht', 'Alternative', 'Hinweis', 'Video'] },
+  plan: { name: 'Plan', cols: ['Tag', 'Übung', 'Sätze', 'Wdh', 'RIR', 'Richtgewicht', 'Alternative', 'Hinweis', 'Pause', 'Video', 'Zuhause', 'Hinweis Zuhause'],
+          text: ['Tag', 'Übung', 'Sätze', 'Wdh', 'RIR', 'Richtgewicht', 'Alternative', 'Hinweis', 'Video', 'Zuhause', 'Hinweis Zuhause'] },
   log:  { name: 'Log', cols: ['Datum', 'Tag', 'Übung', 'Satz', 'Gewicht', 'Wdh', 'RIR', 'Status', 'Variante', 'Notiz', 'Einheit', 'Pos'],
           text: ['Datum', 'Tag', 'Übung', 'Status', 'Variante', 'Notiz', 'Einheit'] },
-  ses:  { name: 'Einheiten', cols: ['id', 'Datum', 'Tag', 'Notiz', 'Geändert'], text: ['id', 'Datum', 'Tag', 'Notiz'] },
+  ses:  { name: 'Einheiten', cols: ['id', 'Datum', 'Tag', 'Notiz', 'Geändert', 'Status', 'Ort'], text: ['id', 'Datum', 'Tag', 'Notiz', 'Status', 'Ort'] },
   bw:   { name: 'Körpergewicht', cols: ['Datum', 'Gewicht', 'Notiz', 'id'], text: ['Datum', 'Notiz', 'id'] }
 };
 var INFO = 'Gorilla';
@@ -55,7 +55,8 @@ function setup() {
   var migrated = isOldLog_(ss.getSheetByName('Log')) ? migrieren_(ss) : null;
   Object.keys(DEF).forEach(function (k) { ensureSheet_(k); });
   var plan = ss.getSheetByName(DEF.plan.name);
-  if (plan.getLastRow() < 2) plan.getRange(2, 1, SAMPLE_PLAN.length, 10).setValues(SAMPLE_PLAN);
+  if (plan.getLastRow() < 2) writeRows_('plan', SAMPLE_PLAN);
+  var homes = fillHome_();
 
   var props = PropertiesService.getScriptProperties();
   var token = props.getProperty('TOKEN');
@@ -73,6 +74,7 @@ function setup() {
   if (migrated && migrated.start) info.getRange('B4').setValue(migrated.start);
   info.getRange('A1').setFontWeight('bold');
   Logger.log('Zugangsschlüssel: ' + token);
+  if (homes) Logger.log(homes + ' Zuhause-Alternativen im Plan vorgeschlagen (Spalte „Zuhause“, frei änderbar).');
   if (migrated) Logger.log('Übernommen: ' + migrated.sessions + ' Einheiten, ' + migrated.sets + ' Sätze. Details im Tab „Migration“.');
 }
 
@@ -138,7 +140,7 @@ function applyOps_(ops) {
     var sRows = readRows_('ses').filter(function (r) { return !(String(r[0]) in ses); });
     sesIds.forEach(function (id) {
       var s = ses[id];
-      if (s) sRows.push([s.id, s.date, txt_(s.day), txt_(s.note), new Date(s.u || Date.now())]);
+      if (s) sRows.push([s.id, s.date, txt_(s.day), txt_(s.note), new Date(s.u || Date.now()), s.st === 'skip' ? 'übersprungen' : '', s.loc === 'home' ? 'Zuhause' : 'Gym']);
     });
     sRows.sort(function (a, b) { return cmp_(day_(a[1]), day_(b[1])); });
     writeRows_('ses', sRows);
@@ -197,6 +199,7 @@ function readRows_(k) {
 }
 function writeRows_(k, rows) {
   var sh = sheet_(k), w = DEF[k].cols.length, old = Math.max(sh.getLastRow() - 1, 0);
+  rows = rows.map(function (r) { r = r.slice(0, w); while (r.length < w) r.push(''); return r; });
   if (old) sh.getRange(2, 1, old, w).clearContent();
   if (rows.length) sh.getRange(2, 1, rows.length, w).setValues(rows);
 }
@@ -211,17 +214,18 @@ function snapshot_() {
   var psh = sheet_('plan'), pv = psh.getDataRange().getValues(), ph = pv.shift().map(function (h) { return String(h).trim().toLowerCase(); });
   var col = function (name) { return ph.indexOf(name.toLowerCase()); };
   var pc = { day: col('Tag'), name: col('Übung'), sets: col('Sätze'), reps: col('Wdh'), rir: col('RIR'), target: col('Richtgewicht'),
-             alt: col('Alternative'), hint: col('Hinweis'), rest: col('Pause'), video: col('Video') };
+             alt: col('Alternative'), hint: col('Hinweis'), rest: col('Pause'), video: col('Video'), home: col('Zuhause'), homeHint: col('Hinweis Zuhause') };
   var plan = pv.filter(function (r) { return pc.name >= 0 && String(r[pc.name]).trim(); }).map(function (r) {
     var g = function (k) { return pc[k] >= 0 ? cellText_(r[pc[k]]) : ''; };
     return { day: g('day'), name: g('name'), sets: g('sets'), reps: g('reps'), rir: g('rir'), target: g('target'),
-             alt: g('alt'), hint: g('hint'), rest: Number(g('rest')) || 0, video: g('video') };
+             alt: g('alt'), hint: g('hint'), rest: Number(g('rest')) || 0, video: g('video'), home: g('home'), homeHint: g('homeHint') };
   });
 
   var byId = {}, order = [];
   readRows_('ses').forEach(function (r) {
     var id = String(r[0]);
-    byId[id] = { id: id, date: day_(r[1]), day: String(r[2]), note: String(r[3] || ''), u: r[4] instanceof Date ? r[4].getTime() : 0, ex: [] };
+    byId[id] = { id: id, date: day_(r[1]), day: String(r[2]), note: String(r[3] || ''), u: r[4] instanceof Date ? r[4].getTime() : 0,
+                 st: String(r[5]) === 'übersprungen' ? 'skip' : '', loc: String(r[6]) === 'Zuhause' ? 'home' : '', ex: [] };
     order.push(id);
   });
   readRows_('log').forEach(function (r) {
@@ -261,6 +265,48 @@ function fillIds_() {
     if (!String(r[10]) && String(r[2]).trim()) { r[10] = 'h-' + day_(r[0]).replace(/-/g, '') + '-' + slug_(r[1]); changed = true; }
   });
   if (changed) writeRows_('log', l);
+}
+
+/* ---------- Zuhause-Alternativen ---------- */
+// Vorschläge für Training ohne Geräte: Körpergewicht, Rucksack, Stuhl, Tisch, Wasserflaschen
+var HOME = [
+  [/beinbeug|leg ?curl|hamstring/i, 'Beincurls mit Handtuch', 'Rückenlage, Fersen auf einem Handtuch auf glattem Boden. Hüfte hoch, Fersen langsam zum Po ziehen und wieder strecken.'],
+  [/beinstreck|leg ?ext/i, 'Wandsitzen', 'Rücken an die Wand, Knie im rechten Winkel, Zeit halten.'],
+  [/wade|calf/i, 'Wadenheben einbeinig (Treppe)', 'Fußballen auf einer Stufe, Ferse tief absenken, ganz hoch drücken. Am Geländer festhalten.'],
+  [/kreuzheb|rdl|deadlift|rumän/i, 'Einbeiniges Kreuzheben mit Rucksack', 'Rucksack in eine Hand, auf einem Bein Hüfte nach hinten schieben, Rücken gerade, Oberkörper und freies Bein bilden eine Linie.'],
+  [/hip ?thrust|glute|gesäß/i, 'Einbeinige Hip Bridge', 'Schultern auf dem Sofa, ein Fuß am Boden, Hüfte hochdrücken und oben eine Sekunde halten.'],
+  [/kniebeug|squat|beinpresse|leg ?press|hackenschmidt|ausfall|lunge/i, 'Bulgarian Split Squats', 'Hinterer Fuß auf Stuhl oder Sofa, vorderes Knie über dem Fuß, langsam tief absenken. Schwerer mit Rucksack.'],
+  [/schulterdr|overhead|military|arnold/i, 'Pike Push-ups', 'Hüfte hoch, Körper als umgedrehtes V. Kopf zwischen den Händen Richtung Boden senken und hochdrücken.'],
+  [/seitheb|lateral|frontheb/i, 'Seitheben mit Wasserflaschen', 'Volle Flaschen oder Rucksack, Arme leicht gebeugt bis Schulterhöhe heben, langsam senken.'],
+  [/klimmz|latzug|pull.?up|chin.?up|\blat/i, 'Rudern unter dem Tisch', 'Unter einen stabilen Tisch legen, Tischkante greifen, Körper gerade, Brust zur Kante ziehen.'],
+  [/rudern|row/i, 'Rucksack-Rudern', 'Rucksack mit Büchern füllen, Oberkörper vorbeugen, Rücken gerade, Rucksack zum Bauch ziehen.'],
+  [/bank|brust|chest|butterfly|fliegend|push.?up|liegestütz/i, 'Liegestütze', 'Hände etwas breiter als schulterbreit, Körper gerade, Brust bis knapp über den Boden. Zu schwer: Hände auf Sofa oder Tisch.'],
+  [/trizeps|dips|pushdown|french|skull/i, 'Dips am Stuhl', 'Hände auf die Stuhlkante hinter dir, Ellenbogen nach hinten beugen, wieder hochdrücken.'],
+  [/bizeps|curl/i, 'Rucksack-Curls', 'Rucksack an den Trägern greifen, Ellenbogen am Körper, kontrolliert beugen und strecken.'],
+  [/intervall|sprint|hiit/i, 'Burpee- oder Hampelmann-Intervalle', '30 s so schnell wie möglich, 90 s locker gehen. 8–10 Runden.'],
+  [/cardio|zone|lauf|rad|rudergerät|crosstrainer/i, 'Zügiger Spaziergang oder Lauf', 'Draußen in einem Tempo, bei dem du dich noch unterhalten könntest.'],
+  [/hanging|hängend|beinheben an der stange/i, 'Liegende Beinheber', 'Rückenlage, Hände unter dem Po, gestreckte Beine langsam heben und kontrolliert absenken, ohne den Boden zu berühren.'],
+  [/plank|crunch|leg raise|bauch|core|sit.?up|russian|dead ?bug/i, '=', '']
+];
+function homeFor_(name) {
+  for (var i = 0; i < HOME.length; i++) if (HOME[i][0].test(name)) return HOME[i];
+  return null;
+}
+/** Leere Zellen in der Spalte „Zuhause“ mit einem Vorschlag füllen. Eigene Einträge bleiben unverändert. */
+function fillHome_() {
+  var sh = sheet_('plan'), n = sh.getLastRow() - 1;
+  if (n < 1) return 0;
+  var v = sh.getRange(2, 1, n, 12).getValues(), changed = 0;
+  v.forEach(function (r) {
+    if (!String(r[1]).trim() || String(r[10]).trim()) return;
+    var h = homeFor_(String(r[1]));
+    if (!h) return;
+    r[10] = h[1] === '=' ? String(r[1]).trim() : h[1];
+    if (!String(r[11]).trim()) r[11] = h[2];
+    changed++;
+  });
+  if (changed) sh.getRange(2, 11, n, 2).setValues(v.map(function (r) { return [r[10], r[11]]; }));
+  return changed;
 }
 
 /* ---------- Übernahme aus der alten Trainings-App ---------- */
