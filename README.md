@@ -47,8 +47,9 @@ Am besten mit einer **Kopie** deines bisherigen Trainings-Sheets. Dann läuft di
 1. Altes Sheet öffnen, **Datei → Kopie erstellen**, z. B. „Gorilla“.
 2. In der Kopie **Erweiterungen → Apps Script** öffnen. Den alten Code (`Code.gs`, `Index.html` usw.) löschen, den Inhalt von [`apps-script/Code.gs`](apps-script/Code.gs) einfügen und speichern.
 3. Oben die Funktion **`setup`** auswählen und **Ausführen** klicken. Den Zugriff erlauben.
-   - Findet `setup` das alte Log, übernimmt es alle Trainings: Werte wie `60/60/57,5` werden in einzelne Sätze zerlegt, Wiederholungen, die Sheets in ein Datum verwandelt hatte (`8/8/2008`), werden zurückgewonnen. Was geprüft werden sollte, steht im neuen Tab **Migration**.
-   - Die alten Tabs bleiben als „Log (alt)“, „Plan (alt)“ und „Körpergewicht (alt)“ erhalten.
+   - Findet `setup` das alte Log, legt es **zuerst eine vollständige Kopie des Sheets in Google Drive** an („… – Sicherung vor Gorilla“, der Link steht im Tab Migration). Google fragt deshalb einmal nach Zugriff auf Drive.
+   - Danach übernimmt es alle Trainings: Werte wie `60/60/57,5` werden in einzelne Sätze zerlegt, Wiederholungen, die Sheets in ein Datum verwandelt hatte (`8/8/2008`), werden zurückgewonnen. Was geprüft werden sollte, steht im neuen Tab **Migration**, ebenso die Kontrolle „alte Zeilen / übernommen“.
+   - Gelöscht wird nichts. Die alten Tabs bleiben zusätzlich als „Log (alt)“, „Plan (alt)“ und „Körpergewicht (alt)“ erhalten.
    - Der Cardio-Tag, der in der alten App fest im Code stand, wird in den Tab Plan geschrieben.
    - Der Trainingsstart für den Deload-Zyklus wird auf den Montag deines ersten Trainings festgelegt.
 4. **Bereitstellen → Neue Bereitstellung**, Typ **Web-App**:

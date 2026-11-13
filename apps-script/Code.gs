@@ -5,7 +5,8 @@
  *  1. Im Google Sheet: Erweiterungen → Apps Script, diesen Code einfügen, speichern.
  *  2. Oben die Funktion „setup“ auswählen und „Ausführen“ klicken, Zugriff erlauben.
  *     Findet setup Daten der alten Trainings-App (Tab „Log“ mit Gewicht | Wdh | RIR),
- *     werden sie automatisch übernommen. Die alten Tabs bleiben als „… (alt)“ erhalten.
+ *     legt es zuerst eine vollständige Kopie des Sheets in Google Drive an und übernimmt dann die Daten.
+ *     Die alten Tabs bleiben zusätzlich als „… (alt)“ erhalten. Nichts wird gelöscht.
  *     Danach steht der Zugangsschlüssel im Tab „Gorilla“ (Zelle B2).
  *  3. Bereitstellen → Neue Bereitstellung → Typ „Web-App“
  *     Ausführen als: „Ich“, Zugriff: „Jeder“ → Bereitstellen, Web-App-URL kopieren.
@@ -270,7 +271,10 @@ function isOldLog_(sh) {
 }
 
 function migrieren_(ss) {
-  var tz = ss.getSpreadsheetTimeZone(), us = /^en_US/.test(ss.getSpreadsheetLocale());
+  // Vor jeder Änderung eine vollständige Kopie der Datei in Google Drive anlegen
+  var backup = DriveApp.getFileById(ss.getId()).makeCopy(ss.getName() + ' – Sicherung vor Gorilla ' + Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm'));
+  Logger.log('Sicherung angelegt: ' + backup.getUrl());
+  var us = /^en_US/.test(ss.getSpreadsheetLocale());
   var old = ss.getSheetByName('Log');
   var rows = old.getDataRange().getValues(); rows.shift();
   var report = [['Zeile', 'Datum', 'Übung', 'Hinweis']];
@@ -346,6 +350,12 @@ function migrieren_(ss) {
   if (report.length === 1) report.push(['', '', '', 'Alles ohne Auffälligkeiten übernommen.']);
   rep.getRange(1, 1, report.length, 4).setValues(report);
   rep.getRange(1, 1, 1, 4).setFontWeight('bold');
+  var oldCount = rows.filter(function (r) { return String(r[2] || '').trim(); }).length;
+  var skipped = report.filter(function (r) { return /übersprungen$/.test(String(r[3])); }).length;
+  rep.insertRowsBefore(1, 2);
+  rep.getRange(1, 1, 2, 4).setValues([
+    ['Sicherung', backup.getUrl(), '', 'Vollständige Kopie des Sheets vor der Übernahme'],
+    ['Kontrolle', oldCount + ' alte Zeilen', (oldCount - skipped) + ' übernommen', skipped ? skipped + ' Zeilen mit unlesbarem Datum, Original in „Log (alt)“' : 'Alle Zeilen übernommen']]);
   return { sessions: ses.length, sets: logRows.length, start: start };
 }
 
