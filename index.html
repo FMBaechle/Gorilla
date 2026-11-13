@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Gorilla</title>
+<meta name="description" content="Krafttraining protokollieren – offline-fähig, mit Google Sheet als Datenbasis.">
+<meta name="theme-color" content="#F8F8FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101119" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Gorilla">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="app.css">
+<script>window.GORILLA_VERSION='1.2.0';
+/* Darstellung vor dem ersten Zeichnen setzen, damit nichts aufblitzt */
+try{var t=localStorage.getItem('gorilla-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<div class="app" id="view" lang="de"></div>
+
+<div class="timer" id="timer" hidden></div>
+<nav class="tabbar" id="tabbar" aria-label="Hauptnavigation"><div class="tabbar-in">
+  <button class="tab" data-act="tab" data-v="train"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Training</span></button>
+  <button class="tab" data-act="tab" data-v="hist"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Verlauf</span></button>
+  <button class="tab" data-act="tab" data-v="body"><svg class="i" viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9"/><path d="M15 7h5v5"/></svg><span>Körper</span></button>
+</div></nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" lang="de" id="sheet" role="dialog" aria-modal="true" aria-label="Eingabe" hidden></section>
+<div class="toast" id="toast" role="status"></div>
+<script src="app.js" defer></script>
+</body>
+</html>
